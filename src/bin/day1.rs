@@ -8,6 +8,18 @@ pub fn most_calories(list: Vec<Vec<i32>>) -> i32 {
         .unwrap()
 }
 
+pub fn top_three_calories(list: Vec<Vec<i32>>) -> i32 {
+    let mut calories: Vec<i32> = list.iter()
+        .map(|l| l.iter().sum())
+        .collect();
+
+    calories.sort();
+
+    return calories.iter().rev()
+        .take(3)
+        .sum();
+}
+
 pub fn parse(input: &str) -> Vec<Vec<i32>> {
     let mut list: Vec<Vec<i32>> = Vec::new();
     let mut current_elf: Vec<i32> = Vec::new();
@@ -32,7 +44,7 @@ fn main() {
         .expect("Failed to read input");
 
 
-    let result = most_calories(parse(&input));
+    let result = top_three_calories(parse(&input));
     println!("{}", result);
 }
 
@@ -57,10 +69,16 @@ mod tests {
         9000
         
         10000
+
     "};
 
     #[test]
     fn test_most_calories() {
         assert_eq!(most_calories(parse(INPUT)), 24000);
+    }
+
+    #[test]
+    fn test_top_three_calories() {
+        assert_eq!(top_three_calories(parse(INPUT)), 45000);
     }
 }
