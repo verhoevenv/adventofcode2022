@@ -27,10 +27,10 @@ ascent! {
    opposite(P1Win, P2Win);
    opposite(P2Win, P1Win);
  
-   outcome(Rock, Scissors, Result::P1Win);
-   outcome(Scissors, Paper, Result::P1Win);
-   outcome(Paper, Rock, Result::P1Win);
-   outcome(x, x, Result::Draw) <-- for x in vec![Rock, Paper, Scissors];
+   outcome(Rock, Scissors, P1Win);
+   outcome(Scissors, Paper, P1Win);
+   outcome(Paper, Rock, P1Win);
+   outcome(x, x, Draw) <-- for x in vec![Rock, Paper, Scissors];
    outcome(p1, p2, r) <-- opposite(r, r2), outcome(p2, p1, r2);
 
    play_out(o) <-- play(p1, p2), outcome(p1, p2, o);
