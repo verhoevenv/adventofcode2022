@@ -22,6 +22,18 @@ pub fn play(p1: &RPS, p2: &RPS) -> Result {
     };
 }
 
+pub fn pick_result<'a>(p1: &'a RPS, res: &'a Result) -> &'a RPS {
+    return match (p1, res) {
+        (RPS::Rock, Result::P1Win) => &RPS::Scissors,
+        (RPS::Rock, Result::P2Win) => &RPS::Paper,
+        (RPS::Paper, Result::P1Win) => &RPS::Rock,
+        (RPS::Paper, Result::P2Win) => &RPS::Scissors,
+        (RPS::Scissors, Result::P1Win) => &RPS::Paper,
+        (RPS::Scissors, Result::P2Win) => &RPS::Rock,
+        (x, Result::Draw) => x,
+    };
+}
+
 pub fn score(p1: &RPS, p2: &RPS) -> i32 {
     let shape = match p2 {
         RPS::Rock => 1,
@@ -38,13 +50,20 @@ pub fn score(p1: &RPS, p2: &RPS) -> i32 {
     return shape + outcome;
 }
 
-pub fn follow_guide(list: Vec<(RPS, RPS)>) -> i32 {
+pub fn follow_guide1(list: Vec<(RPS, RPS)>) -> i32 {
     return list.iter()
         .map(|(p1, p2)| score(p1, p2))
         .sum()
 }
 
-pub fn parse(input: &str) -> Vec<(RPS, RPS)> {
+pub fn follow_guide2(list: Vec<(RPS, Result)>) -> i32 {
+    return list.iter()
+        .map(|(p1, res)| (p1, pick_result(p1, res)))
+        .map(|(p1, p2)| score(p1, p2))
+        .sum()
+}
+
+pub fn parse1(input: &str) -> Vec<(RPS, RPS)> {
     let mut list: Vec<(RPS, RPS)> = Vec::new();
     for line in input.lines() {
         let (p1_s, p2_s) = line.split_once(" ").unwrap();
@@ -65,6 +84,27 @@ pub fn parse(input: &str) -> Vec<(RPS, RPS)> {
     return list;
 }
 
+pub fn parse2(input: &str) -> Vec<(RPS, Result)> {
+    let mut list: Vec<(RPS, Result)> = Vec::new();
+    for line in input.lines() {
+        let (p1_s, p2_s) = line.split_once(" ").unwrap();
+        let p1 = match p1_s {
+            "A" => RPS::Rock,
+            "B" => RPS::Paper,
+            "C" => RPS::Scissors,
+            _ => panic!("Unexpected string {}", p1_s)
+        };
+        let p2 = match p2_s {
+            "X" => Result::P1Win,
+            "Y" => Result::Draw,
+            "Z" => Result::P2Win,
+            _ => panic!("Unexpected string {}", p2_s)
+        };
+        list.push((p1, p2));
+    }
+    return list;
+}
+
 fn main() {
     let mut input = String::new();
 
@@ -73,7 +113,7 @@ fn main() {
         .expect("Failed to read input");
 
 
-    let result = follow_guide(parse(&input));
+    let result = follow_guide2(parse2(&input));
     println!("{}", result);
 }
 
@@ -90,8 +130,13 @@ mod tests {
     "};
 
     #[test]
-    fn test_follow_guide() {
-        assert_eq!(follow_guide(parse(INPUT)), 15);
+    fn test_follow_guide1() {
+        assert_eq!(follow_guide1(parse1(INPUT)), 15);
+    }
+
+    #[test]
+    fn test_follow_guide2() {
+        assert_eq!(follow_guide2(parse2(INPUT)), 12);
     }
 
 }
