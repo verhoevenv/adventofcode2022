@@ -1,37 +1,55 @@
 use std::io;
 use std::io::Read;
+use ascent::ascent;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum RPS {
     Rock, Paper, Scissors
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Result {
     P1Win, P2Win, Draw
 }
 
-pub fn play(p1: &RPS, p2: &RPS) -> Result {
-    return match (p1, p2) {
-        (RPS::Paper, RPS::Rock) => Result::P1Win,
-        (RPS::Rock, RPS::Paper) => Result::P2Win,
-        (RPS::Rock, RPS::Scissors) => Result::P1Win,
-        (RPS::Scissors, RPS::Rock) => Result::P2Win,
-        (RPS::Scissors, RPS::Paper) => Result::P1Win,
-        (RPS::Paper, RPS::Scissors) => Result::P2Win,
-        _ => Result::Draw,
-    };
+use RPS::*;
+use crate::Result::*;
+
+ascent! {
+   relation outcome(RPS, RPS, Result);
+   relation opposite(Result, Result);
+
+   relation play(RPS, RPS);
+   relation play_out(Result);
+   relation pick(RPS, Result);
+   relation pick_out(RPS);
+
+   opposite(P1Win, P2Win);
+   opposite(P2Win, P1Win);
+ 
+   outcome(Rock, Scissors, Result::P1Win);
+   outcome(Scissors, Paper, Result::P1Win);
+   outcome(Paper, Rock, Result::P1Win);
+   outcome(x, x, Result::Draw) <-- for x in vec![Rock, Paper, Scissors];
+   outcome(p1, p2, r) <-- opposite(r, r2), outcome(p2, p1, r2);
+
+   play_out(o) <-- play(p1, p2), outcome(p1, p2, o);
+   pick_out(p2) <-- pick(p1, o), outcome(p1, p2, o);
 }
 
-pub fn pick_result<'a>(p1: &'a RPS, res: &'a Result) -> &'a RPS {
-    return match (p1, res) {
-        (RPS::Rock, Result::P1Win) => &RPS::Scissors,
-        (RPS::Rock, Result::P2Win) => &RPS::Paper,
-        (RPS::Paper, Result::P1Win) => &RPS::Rock,
-        (RPS::Paper, Result::P2Win) => &RPS::Scissors,
-        (RPS::Scissors, Result::P1Win) => &RPS::Paper,
-        (RPS::Scissors, Result::P2Win) => &RPS::Rock,
-        (x, Result::Draw) => x,
-    };
+
+pub fn play(p1: &RPS, p2: &RPS) -> Result {
+    let mut prog = AscentProgram::default();
+    prog.play = vec![(*p1, *p2)];
+    prog.run();
+    return prog.play_out[0].0;
+}
+
+pub fn pick_result(p1: &RPS, res: &Result) -> RPS {
+    let mut prog = AscentProgram::default();
+    prog.pick = vec![(*p1, *res)];
+    prog.run();
+    return prog.pick_out[0].0;
 }
 
 pub fn score(p1: &RPS, p2: &RPS) -> i32 {
@@ -59,7 +77,7 @@ pub fn follow_guide1(list: Vec<(RPS, RPS)>) -> i32 {
 pub fn follow_guide2(list: Vec<(RPS, Result)>) -> i32 {
     return list.iter()
         .map(|(p1, res)| (p1, pick_result(p1, res)))
-        .map(|(p1, p2)| score(p1, p2))
+        .map(|(p1, p2)| score(p1, &p2))
         .sum()
 }
 
