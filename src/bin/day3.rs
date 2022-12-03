@@ -2,17 +2,18 @@ use std::collections::HashSet;
 use std::io;
 use std::io::Read;
 
-fn find_double((str1, str2) : (&str, &str)) -> i32 {
-    let s1: HashSet<_> = str1.chars().collect();
-    let s2: HashSet<_> = str2.chars().collect();
+pub fn find_double(strs: &[&str]) -> char {
+    let doubles = strs.iter()
+        .map(|s| s.chars().collect::<HashSet<char>>())
+        .reduce(|acc, item| acc.intersection(&item).copied().collect())
+        .unwrap();
 
-    let doubles: Vec<_> = s1.intersection(&s2).collect();
     assert!(doubles.len() == 1);
-    return priority(doubles[0]);
+    return *doubles.iter().next().unwrap();
 }
 
-fn priority(item: &char) -> i32 {
-    let val = match *item {
+pub fn priority(item: char) -> i32 {
+    let val = match item {
         c @ 'A'..='Z' => c as u8 - 'A' as u8 + 27,
         c @ 'a'..='z' => c as u8 - 'a' as u8 + 1,
         c @ _ => panic!("Unexpected character {}", c)
@@ -20,12 +21,23 @@ fn priority(item: &char) -> i32 {
     return val as i32;
 }
 
-fn shared_item(input: &str) -> i32 {
+pub fn shared_item(input: &str) -> i32 {
     return input.lines()
         .map(|l: &str| l.split_at(l.len() / 2) )
-        .map(find_double)
+        .map(|(a, b)| [a,b])
+        .map(|x| find_double(&x))
+        .map(priority)
         .sum();
 }
+
+pub fn shared_item2(input: &str) -> i32 {
+    let all_lines: Vec<_> = input.lines().collect();
+    return all_lines.chunks(3)
+        .map(find_double)
+        .map(priority)
+        .sum();
+}
+
 
 fn main() {
     let mut input = String::new();
@@ -35,7 +47,7 @@ fn main() {
         .expect("Failed to read input");
 
 
-    let result = shared_item(&input);
+    let result = shared_item2(&input);
     println!("{}", result);
 }
 
@@ -59,4 +71,8 @@ mod tests {
         assert_eq!(shared_item(INPUT), 157);
     }
 
+    #[test]
+    fn test_shared_item2() {
+        assert_eq!(shared_item2(INPUT), 70);
+    }
 }
