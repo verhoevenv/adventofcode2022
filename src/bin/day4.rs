@@ -3,10 +3,15 @@ use std::io::Read;
 
 type Range = (i32, i32);
 
-pub fn how_many_overlap(input: Vec<(Range,Range)>) -> usize {
-    fn contains((s1,e1): Range, (s2,e2): Range) -> bool {
-        return (s1 >= s2) && (e1 <= e2);
-    }
+pub fn full_contains((s1,e1): Range, (s2,e2): Range) -> bool {
+    return (s1 >= s2) && (e1 <= e2);
+}
+
+pub fn partial_overlap((s1,e1): Range, (s2,e2): Range) -> bool {
+    return (s1 <= e2) && (e1 >= s2);
+}
+
+pub fn how_many_overlap<F: Fn(Range, Range) -> bool>(input: Vec<(Range,Range)>, contains: F) -> usize {
     return input.iter()
         .filter(|(r1, r2)| contains(*r1, *r2) || contains(*r2, *r1))
         .count();
@@ -32,7 +37,7 @@ fn main() {
         .expect("Failed to read input");
 
 
-    let result = how_many_overlap(parse(&input));
+    let result = how_many_overlap(parse(&input), partial_overlap);
     println!("{}", result);
 }
 
@@ -52,7 +57,13 @@ mod tests {
     "};
 
     #[test]
-    fn test_how_many_overlap() {
-        assert_eq!(how_many_overlap(parse(INPUT)), 2);
+    fn test_how_many_fully_overlap() {
+        assert_eq!(how_many_overlap(parse(INPUT), full_contains), 2);
     }
+
+    #[test]
+    fn test_how_many_partially_overlap() {
+        assert_eq!(how_many_overlap(parse(INPUT), partial_overlap), 4);
+    }
+
 }
