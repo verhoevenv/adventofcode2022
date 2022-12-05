@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-struct Crane {
+pub struct Crane {
     stacks: Vec<Stack>,
     instructions: Vec<Instruction>
 }
@@ -19,7 +19,7 @@ struct Instruction {
 }
 
 impl Crane {
-    fn move_all(&mut self) {
+    pub fn move_per_one(&mut self) {
         for instr in &self.instructions {
             for _ in 1..=instr.amount {
                 let c = self.stacks[instr.from - 1].pop_back().unwrap();
@@ -28,7 +28,15 @@ impl Crane {
         }
     }
 
-    fn top(&self) -> String {
+    pub fn move_together(&mut self) {
+        for instr in &self.instructions {
+            let from = &mut self.stacks[instr.from - 1];
+            let mut removed = from.split_off(from.len() - instr.amount);
+            self.stacks[instr.to - 1].append(&mut removed);
+        }
+    }
+
+    pub fn top(&self) -> String {
         let mut result = String::new();
         for s in &self.stacks {
             let c = s.back().unwrap();
@@ -89,7 +97,7 @@ fn main() {
         .expect("Failed to read input");
 
     let mut c: Crane = input.parse().unwrap();
-    c.move_all();
+    c.move_together();
     println!("{}", c.top());
 }
 
@@ -112,10 +120,17 @@ mod tests {
     "};
 
     #[test]
-    fn test_move() {
+    fn test_move_per_one() {
         let mut c: Crane = INPUT.parse().unwrap();
-        c.move_all();
+        c.move_per_one();
         assert_eq!(c.top(), "CMZ");
+    }
+
+    #[test]
+    fn test_move_together() {
+        let mut c: Crane = INPUT.parse().unwrap();
+        c.move_together();
+        assert_eq!(c.top(), "MCD");
     }
 
 }
