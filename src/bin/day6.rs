@@ -12,9 +12,9 @@ pub fn all_different<T: PartialEq>(input: &[T]) -> bool {
     return true;
 }
 
-pub fn four_different(input: &str) -> usize {
-    return 4 + 
-        input.as_bytes().windows(4).enumerate()
+pub fn different(input: &str, len: usize) -> usize {
+    return len + 
+        input.as_bytes().windows(len).enumerate()
         .filter(|(_, s)| all_different(s))
         .map(|(i, _)| i)
         .nth(0)
@@ -28,7 +28,7 @@ fn main() {
         .read_to_string(&mut input)
         .expect("Failed to read input");
 
-    println!("{}", four_different(&input));
+    println!("{}", different(&input, 14));
 }
 
 
@@ -38,11 +38,20 @@ mod tests {
 
     #[test]
     fn test_four_different() {
-        assert_eq!(four_different("mjqjpqmgbljsphdztnvjfqwrcgsmlb"), 7);
-        assert_eq!(four_different("bvwbjplbgvbhsrlpgdmjqwftvncz"), 5);
-        assert_eq!(four_different("nppdvjthqldpwncqszvftbrmjlhg"), 6);
-        assert_eq!(four_different("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg"), 10);
-        assert_eq!(four_different("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"), 11);
+        assert_eq!(different("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 4), 7);
+        assert_eq!(different("bvwbjplbgvbhsrlpgdmjqwftvncz", 4), 5);
+        assert_eq!(different("nppdvjthqldpwncqszvftbrmjlhg", 4), 6);
+        assert_eq!(different("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 4), 10);
+        assert_eq!(different("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 4), 11);
+    }
+
+    #[test]
+    fn test_fourteen_different() {
+        assert_eq!(different("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 14), 19);
+        assert_eq!(different("bvwbjplbgvbhsrlpgdmjqwftvncz", 14), 23);
+        assert_eq!(different("nppdvjthqldpwncqszvftbrmjlhg", 14), 23);
+        assert_eq!(different("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 14), 29);
+        assert_eq!(different("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 14), 26);
     }
 
 }
