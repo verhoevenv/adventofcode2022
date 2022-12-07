@@ -55,6 +55,16 @@ impl Directory {
             .map(|d| d.total_size())
             .sum();
     }
+    
+    pub fn dir_with_enough_space(&self) -> i32 {
+        let unused_size = 70000000 - self.total_size();
+        let needed_size = 30000000 - unused_size;
+        let mut okay_dirs: Vec<&Directory> = self.dirs().into_iter()
+            .filter(|d| d.total_size() > needed_size)
+            .collect();
+        okay_dirs.sort_by(|a, b| a.total_size().cmp(&b.total_size()));
+        return okay_dirs.get(0).unwrap().total_size();
+    }
 
     pub fn dirs(&self) -> Vec<&Directory> {
         let mut result = Vec::new();
@@ -92,7 +102,7 @@ fn main() {
         .expect("Failed to read input");
 
     let fs = parse(&input);
-    println!("{}", fs.sum_of_small_dirs());
+    println!("{}", fs.dir_with_enough_space());
 }
 
 
@@ -132,6 +142,7 @@ mod tests {
         let fs = parse(INPUT);
         assert_eq!(fs.total_size(), 48381165);
         assert_eq!(fs.sum_of_small_dirs(), 95437);
+        assert_eq!(fs.dir_with_enough_space(), 24933642);
     }
 
 }
