@@ -38,11 +38,12 @@ impl XY {
 }
 
 
-pub fn how_many_visited(movements: &str) -> usize {
+pub fn how_many_visited(movements: &str, rope_length: usize) -> usize {
     let mut visited: HashSet<XY> = HashSet::new();
-    let mut head = xy!(0, 0);
-    let mut tail = xy!(0, 0);
-    visited.insert(tail);
+    let mut rope = vec![];
+    rope.resize(rope_length, xy!(0,0));
+    let tail = rope.last().unwrap();
+    visited.insert(*tail);
 
     for line in movements.lines() {
         let (dir, n) = line.split_once(" ").unwrap();
@@ -58,9 +59,15 @@ pub fn how_many_visited(movements: &str) -> usize {
         };
 
         for _ in 0..n {
-            head = head + dir;
-            tail.step_to(&head);
-            visited.insert(tail);
+            let head = rope.get_mut(0).unwrap();
+            *head = *head + dir;
+            for rope_segment in 1..rope_length {
+                let prev_seg = rope.get(rope_segment - 1).unwrap().to_owned();
+                let seg = rope.get_mut(rope_segment).unwrap();
+                seg.step_to(&prev_seg);
+            }
+            let tail = rope.last().unwrap();
+            visited.insert(*tail);
         }
     }
 
@@ -74,7 +81,7 @@ fn main() {
         .read_to_string(&mut input)
         .expect("Failed to read input");
 
-    println!("{}", how_many_visited(&input));
+    println!("{}", how_many_visited(&input, 10));
 }
 
 
@@ -95,8 +102,28 @@ mod tests {
     "};
 
     #[test]
-    fn test_trees() {
-        assert_eq!(how_many_visited(INPUT), 13);
+    fn test_rope_2() {
+        assert_eq!(how_many_visited(INPUT, 2), 13);
     }
 
+
+    #[test]
+    fn test_rope_10_ex_1() {
+        assert_eq!(how_many_visited(INPUT, 10), 1);
+    }
+
+    #[test]
+    fn test_rope_10_ex_2() {
+        const INPUT: &str = indoc! {"
+            R 5
+            U 8
+            L 8
+            D 3
+            R 17
+            D 10
+            L 25
+            U 20
+        "};
+        assert_eq!(how_many_visited(INPUT, 10), 36);
+    }
 }
