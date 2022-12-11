@@ -5,9 +5,11 @@ use std::str::FromStr;
 
 use regex::Regex;
 
+type WorryLevel = u64;
+
 pub struct Monkey {
-    items: VecDeque<i32>,
-    inspections: i32,
+    items: VecDeque<WorryLevel>,
+    inspections: u64,
     operation: Operation,
     test: Test,
     if_true: usize,
@@ -81,11 +83,11 @@ pub enum Operator {
 }
 
 pub enum Argument {
-    Old, Const(i32)
+    Old, Const(WorryLevel)
 }
 
 pub struct Test {
-    divisor: i32
+    divisor: WorryLevel
 }
 
 impl FromStr for Test {
@@ -100,24 +102,35 @@ impl FromStr for Test {
     }
 }
 
-pub fn monkey_business(input: &str) -> i32 {
+pub fn monkey_business(input: &str, extreme_worry: bool) -> u64 {
     let mut monkeys : Vec<Monkey> = input.split("\n\n").map(|m| m.parse().unwrap()).collect();
 
-    for _round in 1..=20 {
+    // since all the tests are remainders by different primes,
+    // doing worry arithmetic in the finite group with size
+    // the product of all these primes sound be sound and equivalent
+    let lcm: WorryLevel = monkeys.iter().map(|m| m.test.divisor as u64).product();
+
+    let iterations = if extreme_worry { 10000 } else { 20 };
+    for _round in 1..=iterations {
         for monkey in 0..monkeys.len() {
             let m = &mut monkeys[monkey];
-            let mut inserts: Vec<(usize, i32)> = vec![];
+            let mut inserts: Vec<(usize, WorryLevel)> = vec![];
             while let Some(item) = m.items.pop_front() {
                 m.inspections += 1;
                 let val = match m.operation.arg {
                     Argument::Old => item,
                     Argument::Const(c) => c,
                 };
-                let new_worry = match m.operation.op {
+                let mut new_worry = match m.operation.op {
                     Operator::Add => item + val,
                     Operator::Mul => item * val,
                 };
-                let new_worry = new_worry / 3;
+
+                if extreme_worry {
+                    new_worry = new_worry % lcm;
+                } else {
+                    new_worry = new_worry / 3;
+                }
 
                 let new_monkey = match new_worry % m.test.divisor {
                     0 => m.if_true,
@@ -148,7 +161,7 @@ fn main() {
         .read_to_string(&mut input)
         .expect("Failed to read input");
 
-    println!("{}", monkey_business(&input));
+    println!("{}", monkey_business(&input, true));
 }
 
 
@@ -158,9 +171,10 @@ mod tests {
     use indoc::indoc;
 
     #[test]
-    fn test_mokney_business() {
-        assert_eq!(monkey_business(INPUT), 10605);
-    }
+    fn test_monkey_business() {
+        assert_eq!(monkey_business(INPUT, false), 10605);
+        assert_eq!(monkey_business(INPUT, true), 2713310158);
+    }    
 
     const INPUT: &str = indoc! {"
         Monkey 0:
