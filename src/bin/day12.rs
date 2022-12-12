@@ -8,8 +8,8 @@ type Height = u8;
 
 pub struct HeightMap {
     heights: HashMap<XY, Height>,
-    start: XY,
-    end: XY,
+    pub start: XY,
+    pub end: XY,
 }
 
 impl FromStr for HeightMap {
@@ -71,19 +71,21 @@ impl HeightMap {
     pub fn exits(&self, xy: &XY) -> Vec<XY> {
         let height = self.get(xy);
         return self.neighbours(xy).iter()
-                .filter(|n| self.get(n) <= height + 1)
+                .filter(|n| self.get(n) >= height - 1)
                 .cloned()
                 .collect();
     }
 
-    pub fn path(&self) -> Vec<XY> {
+    pub fn path<F>(&self, from: XY, is_end: F) -> Vec<XY> 
+        where F: Fn(XY) -> bool {
         //Dijkstra
         let mut distances: HashMap<XY, u64> = HashMap::new();
         for xy in self.all() {
             distances.insert(xy, u64::MAX);
         }
         let mut unvisited = self.all();
-        let mut current = self.start;
+        let mut current = from;
+        let mut end = (-1, -1);
         let mut path_found = false;
         distances.insert(current, 0);
 
@@ -99,16 +101,17 @@ impl HeightMap {
                 }
             }
             unvisited.remove(&current);
-            if current == self.end {
+            if is_end(current) {
                 path_found = true;
+                end = current;
             } else {
                 current = *unvisited.iter().min_by_key(|e| distances.get(e).unwrap()).unwrap();
             }
         }
 
         let mut path = Vec::new();
-        let mut current = self.end;
-        while current != self.start {
+        let mut current = end;
+        while current != from {
             path.push(current);
             current = *self.neighbours(&current).iter()
                 .filter(|n| *distances.get(&n).unwrap() == (distances.get(&current).unwrap() - 1))
@@ -128,7 +131,7 @@ fn main() {
         .expect("Failed to read input");
 
     let hm: HeightMap = input.parse().unwrap();
-    println!("{}", hm.path().len());
+    println!("{}", hm.path(hm.end, |xy| hm.get(&xy) == ('a' as u8)).len());
 }
 
 
@@ -140,8 +143,14 @@ mod tests {
     #[test]
     fn test_path() {
         let hm: HeightMap = INPUT.parse().unwrap();
-        assert_eq!(hm.path().len(), 31);
+        assert_eq!(hm.path(hm.end, |xy| xy == hm.start).len(), 31);
     }    
+
+    #[test]
+    fn test_any_path() {
+        let hm: HeightMap = INPUT.parse().unwrap();
+        assert_eq!(hm.path(hm.end, |xy| hm.get(&xy) == ('a' as u8)).len(), 29);
+    }   
 
     const INPUT: &str = indoc! {"
         Sabqponm
