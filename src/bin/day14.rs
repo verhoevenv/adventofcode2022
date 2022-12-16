@@ -49,8 +49,25 @@ pub struct Cave {
 
 impl fmt::Display for Cave {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut display_topleft = self.bottomright;
+        let mut display_bottomright = self.topleft;
         for y in self.topleft.y..=self.bottomright.y {
             for x in self.topleft.x..=self.bottomright.x {  
+                let idx = xy!(x,y).as_index(&self.topleft);
+                match self.map[idx] {
+                    Filling::Air => {},
+                    Filling::Rock | Filling::Sand => {
+                        display_topleft.x = display_topleft.x.min(x);
+                        display_topleft.y = display_topleft.y.min(y);
+                        display_bottomright.x = display_bottomright.x.max(x);
+                        display_bottomright.y = display_bottomright.y.max(y);
+                    },
+                };
+            }
+        }
+
+        for y in display_topleft.y..=display_bottomright.y {
+            for x in display_topleft.x..=display_bottomright.x {  
                 let idx = xy!(x,y).as_index(&self.topleft);
                 let symbol = match self.map[idx] {
                     Filling::Air => '.',
@@ -97,14 +114,16 @@ fn parse(input: &str) -> Cave {
             path,
         )(input)?;
 
-        let minx = paths.iter().flat_map(|path| path.points.iter()).map(|xy| xy.x).min().unwrap();
         let miny = paths.iter().flat_map(|path| path.points.iter()).map(|xy| xy.y).min().unwrap();
-        let maxx = paths.iter().flat_map(|path| path.points.iter()).map(|xy| xy.x).max().unwrap();
         let maxy = paths.iter().flat_map(|path| path.points.iter()).map(|xy| xy.y).max().unwrap();
 
-        // with some extra breathing room
-        let topleft = xy!(minx - 1, miny.min(0) - 1);
-        let bottomright = xy!(maxx + 1, maxy + 1);
+        // provision enough room for the worst-case pyramid
+        let floor = maxy + 2;
+        let height = floor;
+        let width_one_side = height;
+        let topleft = xy!(500 - width_one_side - 1, miny.min(0) - 1);
+        let bottomright = xy!(500 + width_one_side + 1, floor);
+        
         let shape = bottomright - topleft + xy!(1, 1);
         let shape = (shape.x.try_into().unwrap(), shape.y.try_into().unwrap());
 
@@ -133,6 +152,10 @@ fn parse(input: &str) -> Cave {
 
 pub fn drop_sand(cave: &Cave) -> Option<XY> {
     let mut sand_at = xy!(500, 0);
+    if cave.map[sand_at.as_index(&cave.topleft)] == Filling::Sand {
+        return None;
+    }
+
     'down: loop {   
         for possible_movement in [xy!(0, 1), xy!(-1, 1), xy!(1, 1)] {
             let next_pos = sand_at + possible_movement;
@@ -146,6 +169,13 @@ pub fn drop_sand(cave: &Cave) -> Option<XY> {
         }
         return Some(sand_at);
     }
+}
+
+pub fn create_floor(mut cave: Cave) -> Cave {
+    for x in cave.topleft.x..=cave.bottomright.x {  
+        cave.map[xy!(x, cave.bottomright.y).as_index(&cave.topleft)] = Filling::Rock;
+    }
+    return cave;
 }
 
 pub fn sand(cave: &mut Cave) -> usize {
@@ -164,13 +194,13 @@ fn main() {
         .read_to_string(&mut input)
         .expect("Failed to read input");
 
-    let mut cave = parse(&input);
+    let mut cave = create_floor(parse(&input));
     
-    print!("{}", cave);
+    // print!("{}", cave);
 
     let result = sand(&mut cave);
 
-    print!("{}", cave);
+    // print!("{}", cave);
 
     println!("{}", result);
 }
@@ -184,6 +214,11 @@ mod tests {
     #[test]
     fn test_sand() {
         assert_eq!(sand(&mut parse(INPUT)), 24);
+    }   
+
+    #[test]
+    fn test_until_blocked() {
+        assert_eq!(sand(&mut create_floor(parse(INPUT))), 93);
     }   
 
     const INPUT: &str = indoc! {"
