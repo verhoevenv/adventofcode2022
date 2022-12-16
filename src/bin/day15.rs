@@ -16,6 +16,13 @@ macro_rules! xy {
     };
 }
 
+impl XY {
+    #[inline]
+    pub fn dist(&self, other: &XY) -> i32 {
+        (self.x - other.x).abs() + (self.y - other.y).abs()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sensor {
     position: XY,
@@ -25,7 +32,7 @@ pub struct Sensor {
 
 impl Sensor {
     pub fn new(position: XY, beacon: XY) -> Self {
-        let distance = (beacon.x - position.x).abs() + (beacon.y - position.y).abs();
+        let distance = position.dist(&beacon);
         Sensor { 
             position,
             beacon,
@@ -64,6 +71,29 @@ pub fn no_beacon(y: i32, sensors: Vec<Sensor>) -> usize {
     return positions_covered.len();
 }
 
+
+pub fn tuning_frequency(max_xy: i32, sensors: Vec<Sensor>) -> u64 {
+    for x in 0..=max_xy {
+        let mut y = 0;
+        let mut changed = true;
+        while changed && y <= max_xy {
+            changed = false;
+            for s in &sensors {
+                let chord_length = s.distance - s.position.dist(&xy!(x, y));
+                if chord_length >= 0 {
+                    // we are in range of a sensor, step out of range
+                    y = y + chord_length + 1;
+                    changed = true;    
+                }
+            }
+        }
+        if y <= max_xy {
+            return x as u64 * 4000000 + y as u64;
+        }
+    }
+    unreachable!();
+}
+
 fn main() {
     let mut input = String::new();
 
@@ -71,7 +101,7 @@ fn main() {
         .read_to_string(&mut input)
         .expect("Failed to read input");
 
-    let result = no_beacon(2000000, parse(&input));
+    let result = tuning_frequency(4000000, parse(&input));
 
     println!("{}", result);
 }
@@ -85,7 +115,12 @@ mod tests {
     #[test]
     fn test_no_beacon_on_row() {
         assert_eq!(no_beacon(10, parse(INPUT)), 26);
-    }   
+    } 
+    
+    #[test]
+    fn test_tuning_frequency() {
+        assert_eq!(tuning_frequency(20, parse(INPUT)), 56000011);
+    }     
 
     const INPUT: &str = indoc! {"
         Sensor at x=2, y=18: closest beacon is at x=-2, y=15
